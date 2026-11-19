@@ -1,30 +1,81 @@
 # CentricLabs API (backend)
 
-Separate Express + TypeScript API for the CentricLabs store. No database yet —
-products, services, orders and quotes live in memory (see below).
+Separate Express + JavaScript API for the CentricLabs store. Plain Node.js /
+Express — no TypeScript. Products, services, orders and quotes live in
+MongoDB when connected, otherwise in memory (see below).
+
+## Structure
+
+```
+backend/
+  app.js                 # root entry: creates the Express app, mounts
+                         # middleware + routes, connects the DB, listens
+                         # on port 4000, exports the app
+  package.json           # start: node app.js · dev: nodemon app.js
+                         # seed: node seed.js
+  seed.js                # seeds the 16 sample products + 4 services
+  .env.example           # example env vars (gitignored — see below)
+  .gitignore             # node_modules/, dist/, .env, .env.example, *.log
+  config/
+    db.js                # MongoDB connection (MONGODB_URI), mongodb vs
+                         # in-memory fallback
+  data/
+    sampleData.js        # THE catalogue: 16 sample products + 4 services
+  models/                # Mongoose models, one file per model
+    Product.js  Service.js  Order.js  Quote.js
+  middlewares/
+    adminAuth.js         # admin Bearer-token check
+    errorHandler.js      # async wrapper + final error handler
+  components/            # business logic / data access: MongoDB when
+                         # connected, otherwise the in-memory store
+    products.js  services.js  orders.js  quotes.js  admin.js
+  routes/                # thin Express routers, one per resource
+    products.js  orders.js  quotes.js  services.js  admin.js
+  utils/
+    store.js             # in-memory store for the no-MongoDB mode
+```
 
 ## Run
 
 ```bash
 npm install
-npm run dev      # http://localhost:4000 (tsx watch)
-npm run build    # compiles to dist/
-npm start        # runs the compiled build
+npm run dev      # http://localhost:4000 (nodemon)
+npm start        # node app.js
 ```
 
-Set `PORT` to change the port (default 4000). No `.env` file is used or needed
-— set `MONGODB_URI` in your shell / hosting environment, or copy
-`.env.example` to `.env` locally (never commit a real `.env`).
+Set `PORT` to change the port (default 4000).
+
+## Environment variables
+
+`.env.example` is **gitignored** — it stays in the project as a template,
+but it is not tracked by git, so it will not be pushed to GitHub. (Note: an
+earlier copy was already pushed to GitHub in the first backend snapshot,
+commit `3d04fd6` — gitignore alone does not remove that already-pushed
+copy; it still needs deleting from GitHub.)
+
+To run locally, copy it and fill in your own values:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | What it does |
+| --- | --- |
+| `MONGODB_URI` | e.g. `mongodb://localhost:27017/centriclabs`. Unset = in-memory mode. |
+| `PORT` | API port, default `4000`. |
+| `ADMIN_PASSWORD` | Password for `POST /api/admin/login`. Demo default `admin123` — **CHANGE ME** before any real deployment. |
+
+Never commit a real `.env` file, and never put real credentials in the repo.
 
 ## Database — MongoDB (optional, with in-memory fallback)
 
-The backend uses Mongoose with models in `src/models.ts`:
-`Product`, `Service`, `Order`, `Quote`.
+The backend uses Mongoose with models in `models/`: `Product`, `Service`,
+`Order`, `Quote`.
 
 - **No MongoDB?** The API still works. If `MONGODB_URI` is not set, or
   MongoDB cannot be reached, it logs a warning and serves the in-memory
-  sample data from `src/data.ts`; orders and quotes are kept in memory
-  until the server restarts.
+  sample data from `data/sampleData.js`; orders and quotes are kept in
+  memory until the server restarts.
 - **With MongoDB:** set `MONGODB_URI`, e.g.
   `MONGODB_URI=mongodb://localhost:27017/centriclabs` (see `.env.example`),
   start MongoDB, then seed the catalogue:
@@ -103,7 +154,7 @@ Returns `201` with a confirmation `id` and message.
 
 ## Swapping the sample catalogue
 
-**All products and services live in one file: `src/data.ts`.**
+**All products and services live in one file: `data/sampleData.js`.**
 
 1. Edit the `products` array there — keep the same fields (`id`, `name`,
    `category`, `price`, `description`, `stock`, `image`; `oldPrice` and
@@ -124,5 +175,6 @@ Returns `201` with a confirmation `id` and message.
   transfer. Connect Paystack (or Flutterwave) here and in the frontend
   checkout when ready — no keys are stored in this repo.
 - **Database:** MongoDB is already wired in (see above). When the catalogue
-  lives in MongoDB, edit products there (or via a future admin page) instead
-  of `src/data.ts` — `src/data.ts` remains the seed / fallback source.
+  lives in MongoDB, edit products there (or via the admin dashboard)
+  instead of `data/sampleData.js` — `data/sampleData.js` remains the seed /
+  fallback source.
