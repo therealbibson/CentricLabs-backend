@@ -42,7 +42,7 @@ router.post(
   "/",
   requireAdmin,
   asyncHandler(async (req, res) => {
-    const { name, category, price, oldPrice, description, stock, badge, image } =
+    const { id, name, category, price, oldPrice, description, stock, badge, image } =
       req.body ?? {};
     if (
       !name ||
@@ -59,6 +59,7 @@ router.post(
       return;
     }
     const product = await createProduct({
+      id,
       name,
       category,
       price,

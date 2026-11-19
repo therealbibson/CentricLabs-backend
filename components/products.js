@@ -58,7 +58,12 @@ async function getCategories() {
 
 async function createProduct(data) {
   const product = {
-    id: slugify(String(data.name)),
+    // Honour a caller-supplied id (e.g. restoring a deleted catalogue
+    // product with its original id); otherwise derive one from the name.
+    id:
+      data.id && String(data.id).trim()
+        ? String(data.id).trim()
+        : slugify(String(data.name)),
     name: String(data.name),
     category: String(data.category),
     price: Number(data.price),
